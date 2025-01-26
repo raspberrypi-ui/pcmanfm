@@ -3262,6 +3262,8 @@ static void on_size_allocate(GtkWidget* w, GtkAllocation* alloc)
     update_working_area(self);
     /* queue_layout_items(self); this is called in update_working_area */
 
+    GTK_WIDGET_CLASS (fm_desktop_parent_class)->size_allocate (w, &geom);
+
     /* scale the wallpaper */
     if(gtk_widget_get_realized(w))
     {
@@ -3276,8 +3278,6 @@ static void on_size_allocate(GtkWidget* w, GtkAllocation* alloc)
         //if(self->conf.wallpaper_mode != FM_WP_COLOR && self->conf.wallpaper_mode != FM_WP_TILE)
             update_background(self, -1);
     }
-
-    GTK_WIDGET_CLASS (fm_desktop_parent_class)->size_allocate (w, &geom);
 }
 
 static void on_get_preferred_width(GtkWidget *w, gint *minimal_width, gint *natural_width)

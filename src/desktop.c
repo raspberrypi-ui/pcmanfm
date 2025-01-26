@@ -2229,6 +2229,20 @@ static int get_panel_offset (FmDesktop *desktop)
     return isize;
 }
 
+static void set_opaque_region(FmDesktop *desktop)
+{
+    GdkWindow *window = gtk_widget_get_window(GTK_WIDGET(desktop));
+    gint width, height;
+    gdk_window_get_geometry(window, NULL, NULL, &width, &height);
+    cairo_rectangle_int_t rect = {
+        .width = width,
+        .height = height,
+    };
+    cairo_region_t *region = cairo_region_create_rectangle(&rect);
+    gdk_window_set_opaque_region(window, region);
+    cairo_region_destroy(region);
+}
+
 static void update_background(FmDesktop* desktop, int is_it)
 {
     GtkWidget* widget = (GtkWidget*)desktop;
@@ -2379,6 +2393,7 @@ static void update_background(FmDesktop* desktop, int is_it)
         gdk_window_set_background_pattern(window, pattern);
         cairo_pattern_destroy(pattern);
         gdk_window_invalidate_rect(window, NULL, TRUE);
+        set_opaque_region(desktop);
         return;
     }
 
@@ -2503,6 +2518,7 @@ static void update_background(FmDesktop* desktop, int is_it)
         g_object_unref(pix);
 
     gdk_window_invalidate_rect(window, NULL, TRUE);
+    set_opaque_region(desktop);
 }
 
 /* ---------------------------------------------------------------------

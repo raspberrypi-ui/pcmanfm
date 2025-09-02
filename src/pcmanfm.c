@@ -62,12 +62,11 @@ static gboolean one_screen = FALSE;
 /* static gboolean new_tab = FALSE; */
 static gint show_pref = -1;
 static gboolean desktop_pref = FALSE;
+static gboolean reconfigure = FALSE;
 static char* set_wallpaper = NULL;
 static char* wallpaper_mode = NULL;
 static gboolean new_win = FALSE;
-#if FM_CHECK_VERSION(1, 0, 2)
 static gboolean find_files = FALSE;
-#endif
 static char* ipc_cwd = NULL;
 static char* window_role = NULL;
 
@@ -84,15 +83,14 @@ static GOptionEntry opt_entries[] =
     { "desktop", '\0', 0, G_OPTION_ARG_NONE, &show_desktop, N_("Launch desktop manager"), NULL },
     { "desktop-off", '\0', 0, G_OPTION_ARG_NONE, &desktop_off, N_("Turn off desktop manager if it's running"), NULL },
     { "desktop-pref", '\0', 0, G_OPTION_ARG_NONE, &desktop_pref, N_("Open desktop preference dialog"), NULL },
+    { "reconfigure", '\0', 0, G_OPTION_ARG_NONE, &reconfigure, N_("Reload desktop config file"), NULL },
     { "one-screen", '\0', 0, G_OPTION_ARG_NONE, &one_screen, N_("Use --desktop option only for one screen"), NULL },
     { "set-wallpaper", 'w', 0, G_OPTION_ARG_FILENAME, &set_wallpaper, N_("Set desktop wallpaper from image FILE"), N_("FILE") },
                     /* don't translate list of modes in description, please */
     { "wallpaper-mode", '\0', 0, G_OPTION_ARG_STRING, &wallpaper_mode, N_("Set mode of desktop wallpaper. MODE=(color|stretch|fit|crop|center|tile|screen)"), N_("MODE") },
     { "show-pref", '\0', 0, G_OPTION_ARG_INT, &show_pref, N_("Open Preferences dialog on the page N"), N_("N") },
     { "new-win", 'n', 0, G_OPTION_ARG_NONE, &new_win, N_("Open new window"), NULL },
-#if FM_CHECK_VERSION(1, 0, 2)
     { "find-files", 'f', 0, G_OPTION_ARG_NONE, &find_files, N_("Open a Find Files window"), NULL },
-#endif
     { "role", '\0', 0, G_OPTION_ARG_STRING, &window_role, N_("Window role for usage by window manager"), N_("ROLE") },
     {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &files_to_open, NULL, N_("[FILE1, FILE2,...]")},
     { NULL }
@@ -173,7 +171,6 @@ static void single_inst_cb(const char* cwd, int screen_num)
     pcmanfm_run(screen_num);
 }
 
-#if FM_CHECK_VERSION(1, 2, 0)
 /* ---- statusbar plugins support ---- */
 FM_MODULE_DEFINE_TYPE(tab_page_status, FmTabPageStatusInit, 1)
 
@@ -189,7 +186,6 @@ static gboolean fm_module_callback_tab_page_status(const char *name, gpointer in
     _tab_page_modules = g_list_append(_tab_page_modules, init);
     return TRUE;
 }
-#endif
 
 static void on_config_changed(FmAppConfig *cfg, gpointer _unused)
 {
@@ -201,9 +197,7 @@ int main(int argc, char** argv)
     FmConfig* config;
     GError* err = NULL;
     SingleInstData inst;
-#if FM_CHECK_VERSION(1, 2, 0)
     GList *l;
-#endif
 
 #ifdef ENABLE_NLS
     bindtextdomain ( GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR );
@@ -223,7 +217,8 @@ int main(int argc, char** argv)
     inst.prog_name = "pcmanfm";
     inst.cb = single_inst_cb;
     inst.opt_entries = opt_entries + 3;
-    inst.screen_num = gdk_x11_get_default_screen();
+    if (!gtk_layer_is_supported ())
+        inst.screen_num = gdk_x11_get_default_screen();
     switch(single_inst_init(&inst))
     {
     case SINGLE_INST_CLIENT: /* we're not the first instance. */
@@ -254,38 +249,24 @@ int main(int argc, char** argv)
 
     fm_gtk_init(config);
 
-#if FM_CHECK_VERSION(1, 2, 0)
     /* register our modules */
     fm_modules_add_directory(PACKAGE_MODULES_DIR);
     fm_module_register_tab_page_status();
-#endif
-
-#if FM_CHECK_VERSION(1, 0, 2)
-#  if !FM_CHECK_VERSION(1, 2, 0)
-    /* the sort_by value isn't loaded with LibFM 1.1.x so we need a workaround */
-    /* a little trick to initialize FmFolderModel class */
-    gpointer null_model = fm_folder_model_new(NULL, FALSE);
-    g_object_unref(null_model);
-#  endif
-#endif
 
     /* load pcmanfm-specific config file */
     fm_app_config_load_from_profile(FM_APP_CONFIG(config), profile);
     g_signal_connect(config, "changed::saved_search", G_CALLBACK(on_config_changed), NULL);
 
+    g_signal_connect (gdk_display_get_default (), "monitor-added", G_CALLBACK (monitors_changed), NULL);
+    g_signal_connect (gdk_display_get_default (), "monitor-removed", G_CALLBACK (monitors_changed), NULL);
+
     /* the main part */
-    if(pcmanfm_run(gdk_screen_get_number(gdk_screen_get_default())))
+    if(pcmanfm_run (0))
     {
         first_run = FALSE;
         fm_volume_manager_init();
-#if !GTK_CHECK_VERSION(3, 6, 0)
-        GDK_THREADS_ENTER();
-#endif
         gtk_main();
         /* g_debug("main loop ended"); */
-#if !GTK_CHECK_VERSION(3, 6, 0)
-        GDK_THREADS_LEAVE();
-#endif
 
         if(save_config_idle)
         {
@@ -296,14 +277,12 @@ int main(int argc, char** argv)
         fm_volume_manager_finalize();
     }
 
-#if FM_CHECK_VERSION(1, 2, 0)
     for (l = _tab_page_modules; l; l = l->next)
         if (((FmTabPageStatusInit*)l->data)->finalize)
             ((FmTabPageStatusInit*)l->data)->finalize();
     fm_module_unregister_type("tab_page_status");
     g_list_free(_tab_page_modules);
     _tab_page_modules = NULL;
-#endif
 
     single_inst_finalize(&inst);
     fm_gtk_finalize();
@@ -324,9 +303,7 @@ static gboolean reset_options(void)
     wallpaper_mode = NULL;
     show_pref = -1;
     new_win = FALSE;
-#if FM_CHECK_VERSION(1, 0, 2)
     find_files = FALSE;
-#endif
     g_free(window_role);
     window_role = NULL;
     g_strfreev(files_to_open);
@@ -341,8 +318,8 @@ gboolean pcmanfm_run(gint screen_num)
 
     if(!files_to_open)
     {
-        /* FIXME: use screen number from client and pointer position */
-        FmDesktop *desktop = fm_desktop_get(screen_num, 0);
+        /* Get the desktop on which the mouse pointer is currently displayed... */
+        FmDesktop *desktop = fm_desktop_get();
 
         /* Launch desktop manager */
         if(show_desktop)
@@ -368,6 +345,14 @@ gboolean pcmanfm_run(gint screen_num)
         {
             fm_edit_preference(GTK_WINDOW(desktop), show_pref - 1);
             return reset_options();
+        }
+        else if(reconfigure)
+        {
+            fm_config_load_from_file (fm_config, NULL);
+            fm_desktop_reconfigure (NULL);
+            fm_places_reload ();
+            reconfigure = FALSE;
+            return TRUE;
         }
         else if(desktop == NULL)
         {
@@ -477,11 +462,7 @@ gboolean pcmanfm_run(gint screen_num)
            * #3397444 - pcmanfm dont show window in daemon mode if i call 'pcmanfm' */
             pcmanfm_ref();
         }
-#if FM_CHECK_VERSION(1, 0, 2)
         else if (G_LIKELY(!find_files || n_pcmanfm_ref < 1))
-#else
-        else
-#endif
         {
             /* If we're not in daemon mode, or pcmanfm_run() is called because another
              * instance send signal to us, open cwd by default. */
@@ -497,12 +478,10 @@ gboolean pcmanfm_run(gint screen_num)
         }
     }
 
-#if FM_CHECK_VERSION(1, 0, 2)
     /* we got a reference at this point so we can open a search dialog */
     if (ret && find_files)
         fm_launch_search_simple(GTK_WINDOW(win), NULL, NULL,
                                 pcmanfm_open_folder, NULL);
-#endif
     reset_options();
     return ret;
 }
@@ -527,6 +506,7 @@ void pcmanfm_unref()
 
 static void move_window_to_desktop(FmMainWin* win, FmDesktop* desktop)
 {
+#if 0
     GdkScreen* screen = gtk_widget_get_screen(GTK_WIDGET(desktop));
     Atom atom;
     char* atom_name = "_NET_WM_DESKTOP";
@@ -542,7 +522,7 @@ static void move_window_to_desktop(FmMainWin* win, FmDesktop* desktop)
     xev.window = GDK_WINDOW_XID(gtk_widget_get_window(GTK_WIDGET(win)));
     xev.message_type = atom;
     xev.format = 32;
-    xev.data.l[0] = desktop->cur_desktop;
+    xev.data.l[0] = desktop->monitor;
     xev.data.l[1] = 0;
     xev.data.l[2] = 0;
     xev.data.l[3] = 0;
@@ -551,6 +531,7 @@ static void move_window_to_desktop(FmMainWin* win, FmDesktop* desktop)
     XSendEvent(gdk_x11_get_default_xdisplay(), GDK_ROOT_WINDOW(), False,
                (SubstructureNotifyMask | SubstructureRedirectMask),
                (XEvent *) &xev);
+#endif
 }
 
 gboolean pcmanfm_open_folder(GAppLaunchContext* ctx, GList* folder_infos, gpointer user_data, GError** err)
@@ -573,7 +554,42 @@ gboolean pcmanfm_open_folder(GAppLaunchContext* ctx, GList* folder_infos, gpoint
     for(; l; l=l->next)
     {
         FmFileInfo* fi = (FmFileInfo*)l->data;
+        if (!fm_config->cutdown_menus)
         fm_main_win_open_in_last_active(fm_file_info_get_path(fi));
+        else
+        fm_main_win_add_win(NULL,fm_file_info_get_path(fi));
+    }
+    if(user_data && FM_IS_DESKTOP(user_data))
+        move_window_to_desktop(fm_main_win_get_last_active(), user_data);
+    return TRUE;
+}
+
+gboolean pcmanfm_search_results(GAppLaunchContext* ctx, GList* folder_infos, gpointer user_data, GError** err)
+{
+    GList* l = folder_infos;
+    gboolean use_new_win = new_win;
+
+    /* for desktop folder open it in new win if set in config */
+    if (!use_new_win && user_data && FM_IS_DESKTOP(user_data))
+        use_new_win = app_config->desktop_folder_new_win;
+    if(use_new_win)
+    {
+        FmMainWin *win = fm_main_win_add_win(NULL,
+                                fm_file_info_get_path((FmFileInfo*)l->data));
+        if(window_role)
+            gtk_window_set_role(GTK_WINDOW(win), window_role);
+        new_win = FALSE;
+        l = l->next;
+    }
+    for(; l; l=l->next)
+    {
+        FmFileInfo* fi = (FmFileInfo*)l->data;
+        FmMainWin* win = fm_main_win_get_last_active();
+        if(!win)
+            win = fm_main_win_add_win(NULL, fm_file_info_get_path(fi));
+        else
+            fm_main_win_chdir(win, fm_file_info_get_path(fi));
+        gtk_window_present(GTK_WINDOW(win));
     }
     if(user_data && FM_IS_DESKTOP(user_data))
         move_window_to_desktop(fm_main_win_get_last_active(), user_data);
@@ -618,32 +634,14 @@ gboolean pcmanfm_can_open_path_in_terminal(FmPath* dir)
 
 void pcmanfm_open_folder_in_terminal(GtkWindow* parent, FmPath* dir)
 {
-#if !FM_CHECK_VERSION(1, 2, 0)
-    GAppInfo* app;
-    char** argv;
-    int argc;
-#endif
-
     if(!fm_config->terminal)
     {
         fm_show_error(parent, NULL, _("Terminal emulator is not set."));
         fm_edit_preference(parent, PREF_ADVANCED);
         return;
     }
-#if FM_CHECK_VERSION(1, 2, 0)
     else
     {
-#else
-    if(!g_shell_parse_argv(fm_config->terminal, &argc, &argv, NULL))
-        return;
-    app = g_app_info_create_from_commandline(argv[0], NULL, 0, NULL);
-    g_strfreev(argv);
-    if(app)
-    {
-        GdkAppLaunchContext* ctx = gdk_app_launch_context_new();
-        char* old_cwd = g_get_current_dir();
-        const char *old_pwd = g_getenv("PWD");
-#endif
         GError* err = NULL;
         char* cwd_str;
 
@@ -655,36 +653,12 @@ void pcmanfm_open_folder_in_terminal(GtkWindow* parent, FmPath* dir)
             cwd_str = g_file_get_path(gf);
             g_object_unref(gf);
         }
-#if FM_CHECK_VERSION(1, 2, 0)
         if (!fm_terminal_launch(cwd_str, &err))
-#else
-        /* this is a bit dirty to manipulate environment but what else to do? */
-        g_setenv("PWD", cwd_str, TRUE);
-        gdk_app_launch_context_set_screen(ctx, parent ? gtk_widget_get_screen(GTK_WIDGET(parent)) : gdk_screen_get_default());
-        gdk_app_launch_context_set_timestamp(ctx, gtk_get_current_event_time());
-        g_chdir(cwd_str); /* FIXME: currently we don't have better way for this. maybe a wrapper script? */
-        g_free(cwd_str);
-
-        if(!g_app_info_launch(app, NULL, G_APP_LAUNCH_CONTEXT(ctx), &err))
-#endif
         {
             fm_show_error(parent, NULL, err->message);
             g_error_free(err);
         }
-#if FM_CHECK_VERSION(1, 2, 0)
         g_free(cwd_str);
-#else
-        g_object_unref(ctx);
-        g_object_unref(app);
-
-        /* switch back to old cwd and fix #3114626 - PCManFM 0.9.9 Umount partitions problem */
-        g_chdir(old_cwd); /* This is really dirty, but we don't have better solution now. */
-        g_free(old_cwd);
-        if (old_pwd)
-            g_setenv("PWD", old_pwd, TRUE);
-        else
-            g_unsetenv("PWD");
-#endif
     }
 }
 
@@ -694,4 +668,28 @@ char* pcmanfm_get_profile_dir(gboolean create)
     if(create)
         g_mkdir_with_parents(dir, 0700);
     return dir;
+}
+
+char* pcmanfm_get_system_profile_dir (void)
+{
+    const gchar * const *config_dirs = g_get_system_config_dirs ();
+    char* dir = g_build_filename (config_dirs[0], "pcmanfm", profile ? profile : "default", NULL);
+    return dir;
+}
+
+gchar *home_dir (void)
+{
+    char buf[256];
+    FILE *fp = popen ("eval echo ~$SUDO_USER", "r");
+    if (fp == NULL) return NULL;
+    if (fgets (buf, sizeof (buf) - 1, fp) == NULL)
+    {
+        pclose (fp);
+        return NULL;
+    }
+    pclose (fp);
+    if (strlen (buf) > 0) buf[strlen(buf) - 1] = 0;
+    else return NULL;
+    if (buf[0] != '/') return NULL;
+    return g_strdup (buf);
 }

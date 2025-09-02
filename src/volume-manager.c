@@ -32,6 +32,8 @@
 #include "main-win.h"
 #include "app-config.h"
 
+extern gboolean is_wizard (void);
+
 static GVolumeMonitor* vol_mon = NULL;
 
 static guint on_idle_handler = 0;
@@ -81,7 +83,7 @@ static void _run_app(GAppInfo *app, GMount *mount)
     {
         FmPath* path = fm_path_new_for_gfile(gf);
 
-        if (app_config->media_in_new_tab)
+        if (app_config->media_in_new_tab && !fm_config->cutdown_menus)
             fm_main_win_open_in_last_active(path);
         else
             fm_main_win_add_win(NULL, path);
@@ -278,7 +280,7 @@ inline static void show_autorun_dlg(GVolume* vol, GMount* mount)
     g_object_unref(gicon);
 
     gtk_dialog_set_default_response(data->dlg, GTK_RESPONSE_OK);
-    gtk_dialog_set_alternative_button_order(data->dlg, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+    //gtk_dialog_set_alternative_button_order(data->dlg, GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
     tree_sel = gtk_tree_view_get_selection(data->view);
     gtk_tree_selection_set_mode(tree_sel, GTK_SELECTION_BROWSE);
@@ -355,7 +357,7 @@ static gboolean on_vol_added_timeout(gpointer vol)
 
 static void on_vol_added(GVolumeMonitor* vm, GVolume* vol, gpointer user_data)
 {
-    if(app_config->mount_removable)
+    if(app_config->mount_removable && !is_wizard ())
         /* bug #3615195: GLib reports unrelated volume after mount sometimes
            if it's mounted before reported so let delay it a tiny bit */
         gdk_threads_add_timeout(100, on_vol_added_timeout, g_object_ref(vol));
@@ -392,7 +394,7 @@ static gboolean fm_volume_manager_delay_init(gpointer user_data)
     g_signal_connect(vol_mon, "volume-changed", G_CALLBACK(on_vol_changed), NULL);
 #endif
 
-    if(app_config->mount_on_startup)
+    if(app_config->mount_on_startup && !is_wizard ())
     {
         /* try to automount all volumes */
         vols = g_volume_monitor_get_volumes(vol_mon);

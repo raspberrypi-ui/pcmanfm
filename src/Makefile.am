@@ -32,7 +32,6 @@ EXTRA_DIST= \
 	pref.h \
 	single-inst.h \
 	connect-server.h \
-	gseal-gtk-compat.h \
 	$(NULL)
 
 include_HEADERS = pcmanfm-modules.h

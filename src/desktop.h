@@ -82,12 +82,9 @@ struct _FmDesktop
     guint single_click_timeout_handler;
     guint button_pressed;
     FmFolderModel* model;
-    guint cur_desktop;
     gint monitor;
     FmBackgroundCache *cache;
-#if GTK_CHECK_VERSION(3, 0, 0)
     GtkCssProvider *css;
-#endif
     /* interactive search subwindow */
     GtkWidget *search_window;
     GtkWidget *search_entry;
@@ -96,6 +93,7 @@ struct _FmDesktop
     guint search_timeout_id;
     /* desktop settings for this monitor */
     FmDesktopConfig conf;
+    GtkGesture *gesture;
 };
 
 struct _FmDesktopClass
@@ -106,13 +104,16 @@ struct _FmDesktopClass
 GType       fm_desktop_get_type     (void);
 FmDesktop*  fm_desktop_new          (GdkScreen* screen, gint monitor);
 
-FmDesktop*  fm_desktop_get          (gint screen, gint monitor);
+FmDesktop*  fm_desktop_get          (void);
 
 void        fm_desktop_preference   (GtkAction *act, FmDesktop *desktop);
+void        fm_desktop_reconfigure  (GtkAction *act);
 void        fm_desktop_wallpaper_changed(FmDesktop *desktop);
 
 void fm_desktop_manager_init(gint on_screen);
 void fm_desktop_manager_finalize();
+
+void monitors_changed (GdkDisplay *self, GdkMonitor *monitor, gpointer user_data);
 
 G_END_DECLS
 

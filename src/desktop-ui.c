@@ -46,6 +46,15 @@ static const char folder_menu_xml[]=
   "</placeholder>"
 "</popup>";
 
+static const char folder_menu_cutdown_xml[]=
+"<popup>"
+  "<placeholder name='ph1'>"
+    "<menuitem action='NewWin'/>"
+    "<menuitem action='Term'/>"
+    /* "<menuitem action='Search'/>" */
+  "</placeholder>"
+"</popup>";
+
 /* Additional action entries for popup menus - check mnemonics in FmFileMenu */
 static const GtkActionEntry folder_menu_actions[]=
 {
@@ -55,7 +64,6 @@ static const GtkActionEntry folder_menu_actions[]=
     {"Term", "utilities-terminal", N_("Open in Termina_l"), NULL, NULL, G_CALLBACK(on_open_folder_in_terminal)}
 };
 
-#if FM_CHECK_VERSION(1, 2, 0)
 static const char extra_item_menu_xml[]=
 "<popup>"
   "<placeholder name='ph2'>"
@@ -68,7 +76,6 @@ static const GtkActionEntry extra_item_menu_actions[]=
 {
     {"Disable", NULL, N_("_Remove from Desktop"), NULL, NULL, G_CALLBACK(on_disable)}
 };
-#endif
 
 /* xml definition for desktop item placement */
 static const char desktop_icon_menu_xml[]=

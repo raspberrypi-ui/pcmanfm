@@ -23,14 +23,10 @@
 #define __PCMANFM_H__
 
 #include <gtk/gtk.h>
+#include <gtk-layer-shell/gtk-layer-shell.h>
 #include <libfm/fm.h>
 
 G_BEGIN_DECLS
-
-/* The FM_CHECK_VERSION macro is defined in libfm >= 1.0.2 */
-#ifndef FM_CHECK_VERSION
-#  define FM_CHECK_VERSION(...) 0
-#endif
 
 /* After opening any window/dialog/tool, this should be called. */
 void pcmanfm_ref();
@@ -41,12 +37,16 @@ void pcmanfm_ref();
 void pcmanfm_unref();
 
 gboolean pcmanfm_open_folder(GAppLaunchContext* ctx, GList* folder_infos, gpointer user_data, GError** err);
+gboolean pcmanfm_search_results(GAppLaunchContext* ctx, GList* folder_infos, gpointer user_data, GError** err);
 
 char* pcmanfm_get_profile_dir(gboolean create);
+char* pcmanfm_get_system_profile_dir (void);
 void pcmanfm_save_config(gboolean immediate);
 
 gboolean pcmanfm_can_open_path_in_terminal(FmPath* dir);
 void pcmanfm_open_folder_in_terminal(GtkWindow* parent, FmPath* dir);
+
+gchar *home_dir (void);
 
 G_END_DECLS
 

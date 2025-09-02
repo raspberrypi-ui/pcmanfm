@@ -75,24 +75,17 @@ typedef struct
     gboolean wallpaper_common;
     gint configured : 1;
     gint changed : 1;
-    GdkColor desktop_bg;
-    GdkColor desktop_fg;
-    GdkColor desktop_shadow;
+    GdkRGBA desktop_bg;
+    GdkRGBA desktop_fg;
+    GdkRGBA desktop_shadow;
     char* desktop_font;
     char *folder; /* NULL if default, empty if no icons, else path */
     gboolean show_wm_menu;
-#if FM_CHECK_VERSION(1, 0, 2)
     FmSortMode desktop_sort_type;
     FmFolderModelCol desktop_sort_by;
-#else
-    GtkSortType desktop_sort_type;
-    int desktop_sort_by;
-#endif
-#if FM_CHECK_VERSION(1, 2, 0)
     gboolean show_documents;
     gboolean show_trash;
     gboolean show_mounts;
-#endif
 } FmDesktopConfig;
 
 typedef struct
@@ -124,9 +117,7 @@ struct _FmAppConfig
     gboolean desktop_folder_new_win;
     gboolean change_tab_on_drop;
     gboolean close_on_unmount;
-#if FM_CHECK_VERSION(1, 2, 0)
     gboolean focus_previous;
-#endif
     gboolean maximized;
     gboolean pathbar_mode_buttons;
 
@@ -135,19 +126,15 @@ struct _FmAppConfig
     /* default values for folder views */
     guint view_mode;
     gboolean show_hidden;
-#if FM_CHECK_VERSION(1, 0, 2)
+    gboolean show_thumbs;
     FmSortMode sort_type;
     FmFolderModelCol sort_by;
     /* list of columns formatted as name[:size] */
     char **columns;
-#else
-    GtkSortType sort_type;
-    int sort_by;
-#endif
     gboolean show_statusbar;
-#if FM_CHECK_VERSION(1, 2, 0)
     char *home_path;
-#endif
+    char *prefs_app;
+    gboolean common_bg;
 
     /*char* su_cmd;*/
 
@@ -181,7 +168,6 @@ void fm_app_config_save_profile(FmAppConfig* cfg, const char* name);
 void fm_app_config_load_desktop_config(GKeyFile *kf, const char *group, FmDesktopConfig *cfg);
 void fm_app_config_save_desktop_config(GString *buf, const char *group, FmDesktopConfig *cfg);
 
-#if FM_CHECK_VERSION(1, 0, 2)
 gboolean fm_app_config_get_config_for_path(FmPath *path, FmSortMode *mode,
                                            FmFolderModelCol *by,
                                            FmStandardViewMode *view_mode,
@@ -192,14 +178,6 @@ void fm_app_config_save_config_for_path(FmPath *path, FmSortMode mode,
                                         FmStandardViewMode view_mode,
                                         gboolean show_hidden,
                                         char **columns);
-#else
-gboolean fm_app_config_get_config_for_path(FmPath *path, GtkSortType *mode,
-                                           gint *by, FmStandardViewMode *view_mode,
-                                           gboolean *show_hidden, char ***columns);
-void fm_app_config_save_config_for_path(FmPath *path, GtkSortType mode, gint by,
-                                        FmStandardViewMode view_mode,
-                                        gboolean show_hidden, char **columns);
-#endif
 void fm_app_config_clear_config_for_path(FmPath *path);
 
 void fm_app_config_set_autorun_choice(FmAppConfig *cfg,

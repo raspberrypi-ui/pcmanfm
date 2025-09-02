@@ -1,6 +1,6 @@
 NULL=
 
-SUBDIRS=ui
+SUBDIRS=ui icons
 
 man_MANS=pcmanfm.1
 

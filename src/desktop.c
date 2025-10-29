@@ -73,6 +73,8 @@ struct _FmBackgroundCache
     time_t mtime;
 };
 
+int scale = 3;
+
 // for gestures
 static int gx, gy;
 static gboolean longpress = FALSE;
@@ -275,13 +277,13 @@ static void calc_item_size(FmDesktop* desktop, FmDesktopItem* item, GdkPixbuf* i
     /* icon rect */
     if(icon)
     {
-        item->icon_rect.width = gdk_pixbuf_get_width(icon);
-        item->icon_rect.height = gdk_pixbuf_get_height(icon);
+        item->icon_rect.width = gdk_pixbuf_get_width(icon) / scale;
+        item->icon_rect.height = gdk_pixbuf_get_height(icon) / scale;
     }
     else
     {
-        item->icon_rect.width = fm_config->big_icon_size;
-        item->icon_rect.height = fm_config->big_icon_size;
+        item->icon_rect.width = fm_config->big_icon_size / scale;
+        item->icon_rect.height = fm_config->big_icon_size / scale;
     }
     item->icon_rect.x = item->area.x + (desktop->cell_w - item->icon_rect.width) / 2;
     item->icon_rect.y = item->area.y + desktop->ypad + (fm_config->big_icon_size - item->icon_rect.height) / 2;
@@ -4521,6 +4523,7 @@ static GdkPixbuf *_create_drag_icon(FmDesktop *desktop, gint *x, gint *y)
     area.height += 2;
     s = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, area.width, area.height);
     cr = cairo_create(s);
+    cairo_scale (cr, 1.0 / scale, 1.0 / scale);
 
     gtk_tree_model_get_iter_first(model, &it);
     do
@@ -4534,10 +4537,10 @@ static GdkPixbuf *_create_drag_icon(FmDesktop *desktop, gint *x, gint *y)
         /* draw the icon */
         if (icon)
         {
-            icon_rect.x = item->icon_rect.x - area.x + 1;
-            icon_rect.width = item->icon_rect.width;
-            icon_rect.y = item->icon_rect.y - area.y + 1;
-            icon_rect.height = item->icon_rect.height;
+            icon_rect.x = (item->icon_rect.x - area.x + 1) * scale;
+            icon_rect.width = item->icon_rect.width * scale;
+            icon_rect.y = (item->icon_rect.y - area.y + 1) * scale;
+            icon_rect.height = item->icon_rect.height * scale;
 //g_debug("icon at %d %d %d %d",icon_rect.x,icon_rect.y,icon_rect.width,icon_rect.height);
             gdk_cairo_set_source_pixbuf(cr, icon, icon_rect.x, icon_rect.y);
             gdk_cairo_rectangle(cr, &icon_rect);

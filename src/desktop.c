@@ -4655,6 +4655,7 @@ static void on_sort_changed(GtkTreeSortable *model, FmDesktop *desktop)
 static inline void connect_model(FmDesktop *desktop, FmFolder *folder)
 {
     desktop->model = fm_folder_model_new(folder, FALSE);
+    fm_folder_model_set_view (desktop->model, GTK_WIDGET (desktop));
     g_signal_connect(folder, "start-loading", G_CALLBACK(on_folder_start_loading), desktop);
     g_signal_connect(folder, "finish-loading", G_CALLBACK(on_folder_finish_loading), desktop);
     g_signal_connect(folder, "error", G_CALLBACK(on_folder_error), desktop);
@@ -4879,6 +4880,7 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
                         GDK_PROPERTY_CHANGE_MASK);
 
     self->icon_render = fm_cell_renderer_pixbuf_new();
+    fm_cell_renderer_pixbuf_set_scale (self->icon_render, gtk_widget_get_scale_factor (GTK_WIDGET (self)));
     g_object_set(self->icon_render, "follow-state", TRUE, NULL);
     g_object_ref_sink(self->icon_render);
     fm_cell_renderer_pixbuf_set_fixed_size(FM_CELL_RENDERER_PIXBUF(self->icon_render), fm_config->big_icon_size, fm_config->big_icon_size);

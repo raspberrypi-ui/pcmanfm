@@ -549,6 +549,7 @@ static void on_folder_start_loading(FmFolder* folder, FmTabPage* page)
            it is delayed for non-incremental folders since adding rows into
            model is much faster without handlers connected to its signals */
         FmFolderModel* model = fm_folder_model_new(folder, page->show_hidden);
+        fm_folder_model_set_view (model, GTK_WIDGET (page->views));
         if (page->filter_pattern)
         {
             fm_folder_model_add_filter(model, fm_tab_page_path_filter, page);
@@ -598,6 +599,7 @@ static void on_folder_finish_loading(FmFolder* folder, FmTabPage* page)
     {
         /* create a model for the folder and set it to the view */
         FmFolderModel* model = fm_folder_model_new(folder, page->show_hidden);
+        fm_folder_model_set_view (model, GTK_WIDGET (page->views));
         fm_folder_view_set_model(fv, model);
         if (page->filter_pattern)
         {

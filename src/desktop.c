@@ -73,8 +73,6 @@ struct _FmBackgroundCache
     time_t mtime;
 };
 
-int scale = 3;
-
 // for gestures
 static int gx, gy;
 static gboolean longpress = FALSE;
@@ -273,6 +271,7 @@ static inline void desktop_item_free(FmDesktopItem* item)
 static void calc_item_size(FmDesktop* desktop, FmDesktopItem* item, GdkPixbuf* icon)
 {
     PangoRectangle rc2;
+    int scale = gtk_widget_get_scale_factor (GTK_WIDGET (desktop));
 
     /* icon rect */
     if(icon)
@@ -4480,6 +4479,7 @@ static GdkPixbuf *_create_drag_icon(FmDesktop *desktop, gint *x, gint *y)
     GdkPixbuf *icon;
     GtkTreeIter it;
     GdkRectangle area, icon_rect;
+    int scale = gtk_widget_get_scale_factor (GTK_WIDGET (desktop));
 
     if (!desktop->model)
         return NULL;

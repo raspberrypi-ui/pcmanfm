@@ -2188,7 +2188,7 @@ static void _clear_bg_cache(FmDesktop *self)
 static int get_panel_offset (FmDesktop *desktop)
 {
     char *user_config_file, *mname = NULL, *pmon = NULL;
-    int i, isize;
+    int isize;
     GKeyFile *kf;
 
     // X does it right anyway...
@@ -2248,7 +2248,7 @@ static void set_opaque_region(FmDesktop *desktop)
 static void update_background(FmDesktop* desktop, int is_it)
 {
     GtkWidget* widget = (GtkWidget*)desktop;
-    GdkPixbuf* pix, *scaled, *cropped;
+    GdkPixbuf* pix = NULL, *scaled, *cropped;
     cairo_t* cr;
     GdkWindow *window = gtk_widget_get_window(widget);
     FmBackgroundCache *cache;
@@ -2505,6 +2505,8 @@ static void update_background(FmDesktop* desktop, int is_it)
                     g_object_unref (pix);
                     pix = cropped;
                     break;
+
+                default : break;
             }
         }
         gdk_cairo_set_source_pixbuf(cr, pix, x, y);
@@ -2643,6 +2645,12 @@ static GdkFilterReturn on_root_event(GdkXEvent *xevent, GdkEvent *event, gpointe
     return GDK_FILTER_CONTINUE;
 }
 
+static gboolean force_recon (FmDesktop* desktop)
+{
+    fm_desktop_reconfigure (NULL);
+    return FALSE;
+}
+
 static void on_screen_size_changed(GdkScreen* screen, FmDesktop* desktop)
 {
     GdkRectangle geom;
@@ -2665,6 +2673,9 @@ static void on_screen_size_changed(GdkScreen* screen, FmDesktop* desktop)
     /* bug #3614780: if monitor was moved desktop should be moved too */
     gtk_window_move((GtkWindow*)desktop, geom.x, geom.y);
     /* FIXME: check if new monitor was added! */
+
+    // fixes black screen when increasing scale under labwc
+    g_idle_add (G_SOURCE_FUNC (force_recon), desktop);
 }
 
 static void reload_icons()

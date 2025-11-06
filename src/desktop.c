@@ -3300,8 +3300,8 @@ static void on_size_allocate(GtkWidget* w, GtkAllocation* alloc)
     int scale = gtk_widget_get_scale_factor (w);
     if (fm_cell_renderer_pixbuf_get_scale (self->icon_render) != scale)
     {
-        fm_folder_model_set_icon_size (self->model, fm_folder_model_get_icon_size (self->model));
         fm_cell_renderer_pixbuf_set_scale (self->icon_render, scale);
+        fm_folder_model_set_icon_size (self->model, fm_folder_model_get_icon_size (self->model));
     }
 }
 

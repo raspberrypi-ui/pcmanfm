@@ -3296,6 +3296,13 @@ static void on_size_allocate(GtkWidget* w, GtkAllocation* alloc)
         //if(self->conf.wallpaper_mode != FM_WP_COLOR && self->conf.wallpaper_mode != FM_WP_TILE)
             update_background(self, -1);
     }
+
+    int scale = gtk_widget_get_scale_factor (w);
+    if (fm_cell_renderer_pixbuf_get_scale (self->icon_render) != scale)
+    {
+        fm_folder_model_set_icon_size (self->model, fm_folder_model_get_icon_size (self->model));
+        fm_cell_renderer_pixbuf_set_scale (self->icon_render, scale);
+    }
 }
 
 static void on_get_preferred_width(GtkWidget *w, gint *minimal_width, gint *natural_width)

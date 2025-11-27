@@ -434,6 +434,8 @@ static void create_bookmarks_menu(FmMainWin* win)
     GtkWidget* mi;
     int i = 0;
 
+    if (fm_config->cutdown_menus) return;
+
     list = fm_bookmarks_get_all(win->bookmarks);
     for(l=list;l;l=l->next)
     {

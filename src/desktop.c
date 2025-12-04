@@ -74,6 +74,8 @@ struct _FmBackgroundCache
 };
 
 // for gestures
+
+static int recon;
 static int gx, gy;
 static gboolean longpress = FALSE;
 
@@ -2647,7 +2649,11 @@ static GdkFilterReturn on_root_event(GdkXEvent *xevent, GdkEvent *event, gpointe
 
 static gboolean force_recon (FmDesktop* desktop)
 {
-    fm_desktop_reconfigure (NULL);
+    int i;
+    for (i = 0; i < n_monitors; ++i)
+        if (desktops[i]->monitor >= 0)
+            gtk_widget_queue_resize (GTK_WIDGET (desktops[i]));
+    recon = 0;
     return FALSE;
 }
 
@@ -2675,7 +2681,7 @@ static void on_screen_size_changed(GdkScreen* screen, FmDesktop* desktop)
     /* FIXME: check if new monitor was added! */
 
     // fixes black screen when increasing scale under labwc
-    g_idle_add (G_SOURCE_FUNC (force_recon), desktop);
+    if (!recon) recon = g_idle_add (G_SOURCE_FUNC (force_recon), desktop);
 }
 
 static void reload_icons()

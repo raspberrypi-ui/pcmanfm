@@ -240,6 +240,8 @@ static void fm_app_config_init(FmAppConfig *cfg)
     cfg->desktop_section.show_trash = TRUE;
     cfg->desktop_section.show_mounts = FALSE;
     cfg->desktop_section.folder = NULL;
+    cfg->desktop_section.tmargin = 50;
+    cfg->desktop_section.bmargin = 50;
     cfg->tb.visible = cfg->tb.new_tab = cfg->tb.nav = cfg->tb.home = TRUE;
     cfg->tb.new_win = FALSE;
     cfg->autorun_choices = g_hash_table_new_full(g_str_hash, g_str_equal,
@@ -273,6 +275,8 @@ void fm_app_config_load_desktop_config(GKeyFile *kf, const char *group, FmDeskto
     cfg->desktop_sort_by = FM_FOLDER_MODEL_COL_MTIME;
     cfg->wallpaper_common = TRUE;
     cfg->show_trash = TRUE;
+    cfg->tmargin = 50;
+    cfg->bmargin = 50;
     cfg->configured = TRUE;
     if (cfg->folder) g_free(cfg->folder);
     cfg->folder = NULL;
@@ -364,6 +368,8 @@ void fm_app_config_load_desktop_config(GKeyFile *kf, const char *group, FmDeskto
     fm_key_file_get_bool(kf, group, "show_home", &cfg->show_home);
     fm_key_file_get_bool(kf, group, "show_trash", &cfg->show_trash);
     fm_key_file_get_bool(kf, group, "show_mounts", &cfg->show_mounts);
+    fm_key_file_get_int(kf, group, "tmargin", &cfg->tmargin);
+    fm_key_file_get_int(kf, group, "bmargin", &cfg->bmargin);
 }
 
 void fm_app_config_load_from_key_file(FmAppConfig* cfg, GKeyFile* kf)
@@ -741,6 +747,8 @@ void fm_app_config_save_desktop_config(GString *buf, const char *group, FmDeskto
     g_string_append_printf(buf, "show_home=%d\n", cfg->show_home);
     g_string_append_printf(buf, "show_trash=%d\n", cfg->show_trash);
     g_string_append_printf(buf, "show_mounts=%d\n", cfg->show_mounts);
+    g_string_append_printf(buf, "tmargin=%d\n", cfg->tmargin);
+    g_string_append_printf(buf, "bmargin=%d\n", cfg->bmargin);
 }
 
 static void _save_choice(gpointer key, gpointer val, gpointer buf)

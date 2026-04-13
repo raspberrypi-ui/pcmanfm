@@ -416,8 +416,8 @@ static inline void load_items(FmDesktop* desktop)
                 /* pull item into screen bounds */
                 if (item->area.x < desktop->xmargin + desktop->working_area.x)
                     item->area.x = desktop->xmargin + desktop->working_area.x;
-                if (item->area.y < desktop->ymargin + desktop->working_area.y)
-                    item->area.y = desktop->ymargin + desktop->working_area.y;
+                if (item->area.y < desktop->conf.tmargin + desktop->working_area.y)
+                    item->area.y = desktop->conf.tmargin + desktop->working_area.y;
                 calc_item_size(desktop, item, icon);
                 /* check if item is in screen bounds and pull it if it's not */
                 out = item->area.x + item->area.width + desktop->xmargin - desktop->working_area.width - desktop->working_area.x;
@@ -429,11 +429,11 @@ static inline void load_items(FmDesktop* desktop)
                     item->icon_rect.x -= out;
                     item->text_rect.x -= out;
                 }
-                out = item->area.y + item->area.height + desktop->ymargin - desktop->working_area.height - desktop->working_area.y;
+                out = item->area.y + item->area.height + desktop->conf.tmargin + desktop->conf.bmargin - desktop->working_area.height - desktop->working_area.y;
                 if (out > 0)
                 {
-                    if (out > item->area.y - desktop->ymargin)
-                        out = item->area.y - desktop->ymargin;
+                    if (out > item->area.y - desktop->conf.tmargin)
+                        out = item->area.y - desktop->conf.tmargin;
                     item->area.y -= out;
                     item->icon_rect.y -= out;
                     item->text_rect.y -= out;
@@ -1849,8 +1849,8 @@ static void layout_items(FmDesktop* self)
     int x, y, bottom;
     GtkTextDirection direction = gtk_widget_get_direction(GTK_WIDGET(self));
 
-    y = self->ymargin;
-    bottom = self->working_area.height - self->ymargin;
+    y = self->conf.tmargin;
+    bottom = self->working_area.height - self->conf.bmargin;
 
     if(!model || !gtk_tree_model_get_iter_first(model, &it))
     {
@@ -1875,10 +1875,10 @@ _next_position:
                 item->area.y = self->working_area.y + y;
                 calc_item_size(self, item, icon);
                 /* check if item does not fit into space that left */
-                if (item->area.y + item->area.height > bottom && y > self->ymargin)
+                if (item->area.y + item->area.height > bottom && y > self->conf.tmargin)
                 {
                     x += self->cell_w;
-                    y = self->ymargin;
+                    y = self->conf.tmargin;
                     goto _next_position;
                 }
                 /* prepare position for next item */
@@ -1910,10 +1910,10 @@ _next_position_rtl:
                 item->area.y = self->working_area.y + y;
                 calc_item_size(self, item, icon);
                 /* check if item does not fit into space that left */
-                if (item->area.y + item->area.height > bottom && y > self->ymargin)
+                if (item->area.y + item->area.height > bottom && y > self->conf.tmargin)
                 {
                     x -= self->cell_w;
-                    y = self->ymargin;
+                    y = self->conf.tmargin;
                     goto _next_position_rtl;
                 }
                 /* prepare position for next item */
@@ -2039,10 +2039,10 @@ static void move_item(FmDesktop* desktop, FmDesktopItem* item, int x, int y, gbo
         x = desktop->working_area.x + desktop->working_area.width - desktop->xmargin - item->area.width;
     if (x < desktop->working_area.x + desktop->xmargin)
         x = desktop->working_area.x + desktop->xmargin;
-    if (y > desktop->working_area.y + desktop->working_area.height - desktop->ymargin - item->area.height)
-        y = desktop->working_area.y + desktop->working_area.height - desktop->ymargin - item->area.height;
-    if (y < desktop->working_area.y + desktop->ymargin)
-        y = desktop->working_area.y + desktop->ymargin;
+    if (y > desktop->working_area.y + desktop->working_area.height - desktop->conf.tmargin - desktop->conf.bmargin - item->area.height)
+        y = desktop->working_area.y + desktop->working_area.height - desktop->conf.tmargin - desktop->conf.bmargin - item->area.height;
+    if (y < desktop->working_area.y + desktop->conf.tmargin)
+        y = desktop->working_area.y + desktop->conf.tmargin;
 
     dx = x - item->area.x;
     dy = y - item->area.y;
@@ -2204,52 +2204,6 @@ static void _clear_bg_cache(FmDesktop *self)
     }
 }
 
-static int get_panel_offset (FmDesktop *desktop)
-{
-    char *user_config_file, *mname = NULL, *pmon = NULL;
-    int isize;
-    GKeyFile *kf;
-
-    // X does it right anyway...
-    if (!gtk_layer_is_supported ()) return 0;
-
-    // if there's only one monitor, it doesn't matter...
-    if (n_monitors < 2) return 0;
-
-    // find which monitor and panel size is being used
-    user_config_file = g_build_filename (g_get_user_config_dir (), "wf-panel-pi.ini", NULL);
-    kf = g_key_file_new ();
-    g_key_file_load_from_file (kf, user_config_file, G_KEY_FILE_NONE, NULL);
-    g_free (user_config_file);
-
-    pmon = g_key_file_get_string (kf, "panel", "monitor", NULL);
-    isize = g_key_file_get_integer (kf, "panel", "icon_size", NULL);
-    if (isize <= 0) isize = 32;
-
-    g_key_file_free (kf);
-
-    if (!pmon)
-    {
-        // monitor not set in panel config file - panel will be on mon 0
-        if (desktop->monitor == 0) isize += 4;
-        else isize = 0;
-    }
-    else
-    {
-        // find the monitor name for this desktop
-        mname = gdk_screen_get_monitor_plug_name (gdk_display_get_default_screen (gdk_display_get_default ()),
-            desktop->monitor);
-
-        // compare against the monitor name set in the panel config
-        if (!g_strcmp0 (mname, pmon)) isize += 4;
-        else isize = 0;
-
-        g_free (mname);
-        g_free (pmon);
-    }
-    return isize;
-}
-
 static void set_opaque_region(FmDesktop *desktop)
 {
     GdkWindow *window = gtk_widget_get_window(GTK_WIDGET(desktop));
@@ -2407,7 +2361,7 @@ static void update_background(FmDesktop* desktop, int is_it)
 
     if(!cache) /* solid color only */
     {
-        gdk_window_resize (window, geom.width, geom.height - get_panel_offset (desktop));
+        gdk_window_resize (window, geom.width, geom.height);
         pattern = cairo_pattern_create_rgb(desktop->conf.desktop_bg.red,
                                            desktop->conf.desktop_bg.green,
                                            desktop->conf.desktop_bg.blue);
@@ -2428,7 +2382,7 @@ static void update_background(FmDesktop* desktop, int is_it)
         src_h = gdk_pixbuf_get_height(pix);
         {
             dest_w = geom.width;
-            dest_h = geom.height - get_panel_offset (desktop);
+            dest_h = geom.height;
             if (desktop->conf.wallpaper_mode == FM_WP_SCREEN)
             {
                 x = -geom.x;
@@ -2929,7 +2883,7 @@ static void on_snap_to_grid(GtkAction* act, gpointer user_data)
     int x, y;
     GtkTextDirection direction = gtk_widget_get_direction(GTK_WIDGET(desktop));
 
-    y = desktop->working_area.y + desktop->ymargin;
+    y = desktop->working_area.y + desktop->conf.tmargin;
     //bottom = desktop->working_area.y + desktop->working_area.height - desktop->ymargin - desktop->cell_h;
 
     if(direction != GTK_TEXT_DIR_RTL) /* LTR or NONE */
@@ -4891,6 +4845,7 @@ static void fm_desktop_init(FmDesktop *self)
         gtk_layer_set_anchor(&(self->parent), GTK_LAYER_SHELL_EDGE_BOTTOM, TRUE);
         gtk_layer_set_anchor(&(self->parent), GTK_LAYER_SHELL_EDGE_LEFT, TRUE);
         gtk_layer_set_anchor(&(self->parent), GTK_LAYER_SHELL_EDGE_RIGHT, TRUE);
+        gtk_layer_set_exclusive_zone (&(self->parent), -1);
     }
 }
 

@@ -229,6 +229,7 @@ int main(int argc, char** argv)
         single_inst_finalize(&inst);
         return 1;
     case SINGLE_INST_SERVER: ; /* FIXME */
+        if (reconfigure) return 1;
     }
 
     if(pipe(signal_pipe) == 0)

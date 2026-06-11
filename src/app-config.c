@@ -255,6 +255,7 @@ static void fm_app_config_init(FmAppConfig *cfg)
     cfg->pathbar_mode_buttons = FALSE;
     cfg->prefs_app = NULL;
     cfg->common_bg = FALSE;
+    cfg->use_swaybg = FALSE;
 }
 
 
@@ -508,6 +509,7 @@ void fm_app_config_load_from_key_file(FmAppConfig* cfg, GKeyFile* kf)
         cfg->prefs_app = tmp;
     }
     fm_key_file_get_bool(kf, "ui", "common_bg", &cfg->common_bg);
+    fm_key_file_get_bool(kf, "ui", "use_swaybg", &cfg->use_swaybg);
 }
 
 void fm_app_config_load_from_profile(FmAppConfig* cfg, const char* name)
@@ -849,6 +851,7 @@ void fm_app_config_save_profile(FmAppConfig* cfg, const char* name)
         g_string_append_printf(buf, "pathbar_mode_buttons=%d\n", cfg->pathbar_mode_buttons);
         if (cfg->prefs_app) g_string_append_printf(buf, "prefs_app=%s\n", cfg->prefs_app);
         g_string_append_printf(buf, "common_bg=%d\n", cfg->common_bg);
+        g_string_append_printf(buf, "use_swaybg=%d\n", cfg->use_swaybg);
 
         path = g_build_filename(dir_path, "pcmanfm.conf", NULL);
         g_file_set_contents(path, buf->str, buf->len, NULL);

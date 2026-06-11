@@ -138,6 +138,7 @@ struct _FmAppConfig
     char *home_path;
     char *prefs_app;
     gboolean common_bg;
+    gboolean use_swaybg;
 
     /*char* su_cmd;*/
 

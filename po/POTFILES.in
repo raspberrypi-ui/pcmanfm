@@ -12,4 +12,3 @@ src/pcmanfm.c
 src/tab-page.c
 src/pref.c
 data/pcmanfm.desktop.in
-data/pcmanfm-desktop-pref.desktop.in
